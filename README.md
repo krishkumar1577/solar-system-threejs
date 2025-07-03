@@ -4,7 +4,6 @@
 
 [![Three.js](https://img.shields.io/badge/Three.js-v0.153.0-blue)](https://threejs.org/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Responsive](https://img.shields.io/badge/Design-Responsive-brightgreen)](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design)
 
 ## 🌍 Project Overview
