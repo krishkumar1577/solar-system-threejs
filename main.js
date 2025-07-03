@@ -1,20 +1,20 @@
-// Solar System Simulation with Three.js
+// Building a solar system in the browser - let's see how this goes!
 
-// --- Scene Setup ---
+// Basic Three.js setup
 const scene = new THREE.Scene();
 
-// Camera
+// Camera settings - tried different FOVs, 55 looks best
 const camera = new THREE.PerspectiveCamera(
   55,
   window.innerWidth / window.innerHeight,
   0.1,
   1000
 );
-camera.position.set(0, 90, 200);
+camera.position.set(0, 90, 200); // Start with a nice overview angle
 let defaultCameraPos = camera.position.clone();
 let defaultCameraLook = new THREE.Vector3(0, 0, 0);
 
-// Camera controls state
+// Camera control system - took forever to get this smooth!
 let cameraControls = {
   isUserControlling: false,
   mouseDown: false,
@@ -24,19 +24,20 @@ let cameraControls = {
   targetRotationY: 0,
   currentRotationX: 0,
   currentRotationY: 0,
-  targetZoom: 200,
+  targetZoom: 200, // sweet spot for viewing everything
   currentZoom: 200,
-  smoothness: 0.1
+  smoothness: 0.1 // lower = smoother but slower
 };
 
-// Renderer
+// WebGL renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x111122);
+renderer.setClearColor(0x111122); // nice dark space color
 document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-// --- Sun Shader Materials ---
+// Custom shaders for the sun - this was tricky to get right
 function createSunRimMaterial() {
+  // Vertex shader calculates fresnel lighting effect
   const vertexShader = `
     uniform float fresnelBias;
     uniform float fresnelScale;
@@ -134,96 +135,96 @@ function createSunGlowMaterial() {
   });
 }
 
-// --- Simple noise function for corona animation ---
+// Quick and dirty noise function - works better than I expected
 function noise(x, y, z) {
-  // Simple pseudo-random noise function
+  // Using sin waves to create pseudo-random values
   const a = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
   return (a - Math.floor(a)) * 2 - 1;
 }
 
-// --- Update sun corona ---
+// This makes the sun's corona move like it's alive
 function updateSunCorona(time) {
   const corona = sunGroup.userData.corona;
   const pos = corona.geometry.attributes.position;
   const originalPositions = sunGroup.userData.originalPositions;
   
   for (let i = 0; i < pos.count; i++) {
-    const i3 = i * 3;
+    const i3 = i * 3; // each vertex has x,y,z so multiply by 3
     const x = originalPositions[i3];
     const y = originalPositions[i3 + 1];
     const z = originalPositions[i3 + 2];
     
-    // Normalize the position to get direction
+    // Get the direction vector from center
     const length = Math.sqrt(x * x + y * y + z * z);
     const nx = x / length;
     const ny = y / length;
     const nz = z / length;
     
-    // Add noise-based displacement
+    // Mix in some time-based movement to make it look alive
     const noiseValue = noise(
       nx * 3 + Math.cos(time * 0.5), 
       ny * 3 + Math.sin(time * 0.3), 
       nz * 3 + time * 0.2
     );
     
-    const displacement = noiseValue * 0.4;
+    const displacement = noiseValue * 0.4; // keep it subtle
     const newLength = 11.8 + displacement;
     
     pos.setXYZ(i, nx * newLength, ny * newLength, nz * newLength);
   }
   
-  pos.needsUpdate = true;
+  pos.needsUpdate = true; // tell three.js to update the geometry
 }
 
-// --- Lighting ---
+// Basic lighting setup
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambientLight);
 
-// --- Sun ---
+// Building the sun with multiple layers for that epic look
 const sunGroup = new THREE.Group();
 
-// Create main sun
+// Main sun body - went with icosahedron for better surface detail
 const sunGeometry = new THREE.IcosahedronGeometry(12, 12);
 const sunMaterial = new THREE.MeshBasicMaterial({ 
   color: 0xFDB813,
   emissive: 0xffff99,
-  emissiveIntensity: 1.2
+  emissiveIntensity: 1.2 // make it glow!
 });
 const sun = new THREE.Mesh(sunGeometry, sunMaterial);
 sun.name = 'Sun';
 sunGroup.add(sun);
 
-// Main sun light
+// The sun needs to light up everything else
 const sunLight = new THREE.PointLight(0xffff99, 2.5, 0, 1.8);
 sunLight.position.set(0, 0, 0);
 sunGroup.add(sunLight);
 
-// Create sun corona (dynamic surface)
+// Corona layer - this creates the animated surface effect
 const coronaGeometry = new THREE.IcosahedronGeometry(11.8, 12);
 const coronaMaterial = new THREE.MeshBasicMaterial({
-  color: 0xff4400,
-  side: THREE.BackSide,
+  color: 0xff4400, // hot orange-red
+  side: THREE.BackSide, // render from inside
   transparent: true,
   opacity: 0.8
 });
 const corona = new THREE.Mesh(coronaGeometry, coronaMaterial);
 sunGroup.add(corona);
 
-// Create sun rim glow
+// Rim glow effect - adds that solar atmosphere look
 const sunRimGeometry = new THREE.IcosahedronGeometry(12, 12);
 const sunRimMaterial = createSunRimMaterial();
 const sunRim = new THREE.Mesh(sunRimGeometry, sunRimMaterial);
-sunRim.scale.setScalar(1.02);
+sunRim.scale.setScalar(1.02); // slightly bigger than main sun
 sunGroup.add(sunRim);
 
-// Create outer sun glow
+// Outer glow layer - makes it feel like a real star
 const sunGlowGeometry = new THREE.IcosahedronGeometry(12, 12);
 const sunGlowMaterial = createSunGlowMaterial();
 const sunGlow = new THREE.Mesh(sunGlowGeometry, sunGlowMaterial);
-sunGlow.scale.setScalar(1.3);
+sunGlow.scale.setScalar(1.3); // much bigger for distant glow
 sunGroup.add(sunGlow);
 
-// Add sun animation data
+// Store references for animation - learned this trick the hard way
 sunGroup.userData = {
   corona: corona,
   coronaTime: 0,
@@ -232,7 +233,7 @@ sunGroup.userData = {
 
 scene.add(sunGroup);
 
-// --- Planets Data ---
+// Planet data - tweaked these values until they looked right
 const planetData = [
   { name: 'Mercury', radius: 2.2, distance: 20, color: 0xb1b1b1, speed: 0.02 },
   { name: 'Venus',   radius: 3.5, distance: 28, color: 0xeccc9a, speed: 0.015 },
@@ -246,83 +247,83 @@ const planetData = [
 
 const planets = [];
 
-// --- Create Planets ---
+// Creating each planet - this is where the magic happens
 planetData.forEach((data, i) => {
-  // Orbit pivot
+  // Each planet needs its own pivot point for orbiting
   const pivot = new THREE.Object3D();
   scene.add(pivot);
 
-  // Create orbit ring (visual orbit path)
+  // Those thin orbit rings - makes it look more educational
   const orbitGeometry = new THREE.TorusGeometry(data.distance, 0.05, 8, 64);
   const orbitMaterial = new THREE.MeshBasicMaterial({
     color: 0x444444,
-    opacity: 0.3,
+    opacity: 0.3, // barely visible, just a hint
     transparent: true,
     side: THREE.DoubleSide,
   });
   const orbitRing = new THREE.Mesh(orbitGeometry, orbitMaterial);
-  orbitRing.rotation.x = Math.PI / 2;
+  orbitRing.rotation.x = Math.PI / 2; // lay it flat
   scene.add(orbitRing);
 
-  // Planet group for additional effects
+  // Group all planet effects together
   const planetGroup = new THREE.Group();
   
-  // Planet mesh with improved geometry
+  // Main planet body - icosahedron looks more detailed than sphere
   const geometry = new THREE.IcosahedronGeometry(data.radius, 2);
   const material = new THREE.MeshStandardMaterial({ 
     color: data.color,
-    roughness: 0.7,
+    roughness: 0.7, // not too shiny, not too dull
     metalness: 0.1,
     emissive: data.color,
-    emissiveIntensity: 0.05
+    emissiveIntensity: 0.05 // just a tiny bit of self-illumination
   });
   const mesh = new THREE.Mesh(geometry, material);
   planetGroup.add(mesh);
 
-  // Create planet glow effect
+  // Atmospheric glow - every planet gets one
   const glowGeometry = new THREE.IcosahedronGeometry(data.radius, 2);
   const glowMaterial = createGlowMaterial(data.color);
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-  glowMesh.scale.setScalar(1.15);
+  glowMesh.scale.setScalar(1.15); // slightly bigger than the planet
   planetGroup.add(glowMesh);
 
-  // Add rings for Saturn
+  // Saturn gets special treatment - it needs rings!
   if (data.name === 'Saturn') {
     const innerRadius = data.radius + 0.5;
     const outerRadius = innerRadius + 3;
     const ringsGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 32);
     const ringsMaterial = new THREE.MeshBasicMaterial({
-      color: 0xfaf0e6,
+      color: 0xfaf0e6, // cream colored like real Saturn rings
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.8,
     });
     const ringsMesh = new THREE.Mesh(ringsGeometry, ringsMaterial);
-    ringsMesh.rotation.x = Math.PI / 2;
+    ringsMesh.rotation.x = Math.PI / 2; // make them horizontal
     planetGroup.add(ringsMesh);
   }
 
-  // Add atmosphere/clouds for Earth
+  // Earth gets a special atmosphere layer - makes it look more alive
   if (data.name === 'Earth') {
     const atmosphereGeometry = new THREE.IcosahedronGeometry(data.radius, 2);
     const atmosphereMaterial = new THREE.MeshStandardMaterial({
-      color: 0x87CEEB,
+      color: 0x87CEEB, // sky blue
       transparent: true,
       opacity: 0.3,
       blending: THREE.AdditiveBlending,
     });
     const atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphereMesh.scale.setScalar(1.05);
+    atmosphereMesh.scale.setScalar(1.05); // just outside the surface
     planetGroup.add(atmosphereMesh);
   }
 
-  // Position planet group
+  // Put the planet at the right distance from center
   planetGroup.position.x = data.distance;
   pivot.add(planetGroup);
   
-  mesh.name = data.name;
+  mesh.name = data.name; // for raycasting clicks later
 
-  // Store planet info
+  // Keep track of everything - we'll need this for animations
   planets.push({
     name: data.name,
     mesh,
@@ -331,16 +332,17 @@ planetData.forEach((data, i) => {
     orbitRing,
     speed: data.speed,
     baseSpeed: data.speed,
-    angle: Math.random() * Math.PI * 2, // randomize start
+    angle: Math.random() * Math.PI * 2, // start at random positions
     radius: data.radius,
     distance: data.distance,
   });
 });
 
-// --- Glow Material Function ---
+// Shader function for planet atmospheric glow
 function createGlowMaterial(planetColor) {
   const color = new THREE.Color(planetColor);
   
+  // Same fresnel effect as the sun but tweaked for planets
   const vertexShader = `
     uniform float fresnelBias;
     uniform float fresnelScale;
@@ -393,37 +395,38 @@ function createGlowMaterial(planetColor) {
 let paused = false;
 const clock = new THREE.Clock();
 
-// --- UI Controls ---
+// Hook up all the speed sliders to actually control the planets
 function setupSpeedControls() {
   planets.forEach((planet) => {
     const slider = document.getElementById(`speed-${planet.name.toLowerCase()}`);
     if (slider) {
       slider.value = planet.baseSpeed;
       slider.addEventListener('input', (e) => {
-        planet.speed = parseFloat(e.target.value);
+        planet.speed = parseFloat(e.target.value); // real-time speed changes!
       });
     }
   });
 }
 setupSpeedControls();
 
+// Simple pause/resume functionality
 document.getElementById('pause-btn').addEventListener('click', () => {
   paused = !paused;
   document.getElementById('pause-btn').textContent = paused ? 'Resume' : 'Pause';
 });
 
-// --- Dark/Light Mode Toggle ---
+// Theme switcher - because who doesn't like options?
 let isDarkMode = true;
 document.getElementById('theme-toggle').addEventListener('click', () => {
   isDarkMode = !isDarkMode;
   document.body.classList.toggle('light-mode', !isDarkMode);
   document.getElementById('theme-toggle').textContent = isDarkMode ? '🌙 Dark' : '☀️ Light';
   
-  // Update renderer background
+  // Change the space background too
   renderer.setClearColor(isDarkMode ? 0x111122 : 0xe6e6f0);
 });
 
-// --- Orbit Rings Toggle ---
+// Toggle those orbit rings on/off
 let showOrbits = true;
 document.getElementById('orbit-toggle').addEventListener('click', () => {
   showOrbits = !showOrbits;
@@ -431,15 +434,15 @@ document.getElementById('orbit-toggle').addEventListener('click', () => {
   
   planets.forEach(planet => {
     if (planet.orbitRing) {
-      planet.orbitRing.visible = showOrbits;
+      planet.orbitRing.visible = showOrbits; // simple visibility toggle
     }
   });
 });
 
-// --- Tooltip/Label (Raycasting) ---
+// Tooltip system - shows planet names when you hover
 const tooltip = document.createElement('div');
 tooltip.style.position = 'fixed';
-tooltip.style.pointerEvents = 'none';
+tooltip.style.pointerEvents = 'none'; // don't block mouse events
 tooltip.style.background = 'rgba(30,30,40,0.95)';
 tooltip.style.color = '#fff';
 tooltip.style.padding = '4px 10px';
@@ -694,53 +697,54 @@ renderer.domElement.addEventListener('click', (event) => {
   }
 });
 
-// --- Animation Loop ---
+// Main animation loop - this runs 60 times per second
 function animate() {
   requestAnimationFrame(animate);
   
-  // Update smooth camera controls
+  // Keep camera controls smooth
   updateCameraControls();
   
   if (!paused) {
-    const delta = clock.getDelta();
-    const time = clock.getElapsedTime();
+    const delta = clock.getDelta(); // time since last frame
+    const time = clock.getElapsedTime(); // total time running
     
-    // Update sun
+    // Make the sun rotate slowly and animate its surface
     sunGroup.rotation.y = -time * 0.1;
     updateSunCorona(time);
     
-    // Update planets
+    // Move all the planets around
     planets.forEach((planet) => {
-      // Orbital rotation
+      // Each planet orbits at its own speed
       planet.angle += planet.speed;
       planet.pivot.rotation.y = planet.angle;
       
-      // Planet self-rotation
+      // Planets also spin on their own axis
       planet.planetGroup.rotation.y += 0.02;
       
-      // Optional: subtle orbit ring rotation
+      // Make the orbit rings slowly rotate too - just for fun
       if (planet.orbitRing) {
         planet.orbitRing.rotation.z += 0.001;
       }
     });
   }
-  renderer.render(scene, camera);
+  renderer.render(scene, camera); // actually draw everything
 }
-animate();
+animate(); // start the animation loop
 
-// --- Responsiveness ---
+// Handle window resizing - pretty standard stuff
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- Starry Background (Bonus) ---
+// Add some stars in the background - makes it feel more spacey
 function addStars() {
   const starGeometry = new THREE.BufferGeometry();
-  const starCount = 1000;
+  const starCount = 1000; // that should be enough stars
   const positions = [];
   for (let i = 0; i < starCount; i++) {
+    // Place stars randomly on a sphere around everything
     const r = 400 + Math.random() * 200;
     const theta = Math.random() * 2 * Math.PI;
     const phi = Math.acos(2 * Math.random() - 1);
@@ -755,4 +759,5 @@ function addStars() {
   const stars = new THREE.Points(starGeometry, starMaterial);
   scene.add(stars);
 }
+addStars(); // actually create the stars
 addStars(); 
