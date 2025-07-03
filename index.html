@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar System Simulation - Three.js</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+</head>
+<body>
+  <div id="ui-container">
+    <h1>Solar System Simulation</h1>
+    <div id="controls">
+      <div class="controls-row">
+        <div class="planet-controls">
+          <div class="planet-control">
+            <label for="speed-mercury">Mercury</label>
+            <input type="range" id="speed-mercury" min="0" max="0.1" step="0.001" value="0.02">
+          </div>
+          <div class="planet-control">
+            <label for="speed-venus">Venus</label>
+            <input type="range" id="speed-venus" min="0" max="0.1" step="0.001" value="0.015">
+          </div>
+          <div class="planet-control">
+            <label for="speed-earth">Earth</label>
+            <input type="range" id="speed-earth" min="0" max="0.1" step="0.001" value="0.01">
+          </div>
+          <div class="planet-control">
+            <label for="speed-mars">Mars</label>
+            <input type="range" id="speed-mars" min="0" max="0.1" step="0.001" value="0.008">
+          </div>
+          <div class="planet-control">
+            <label for="speed-jupiter">Jupiter</label>
+            <input type="range" id="speed-jupiter" min="0" max="0.1" step="0.001" value="0.005">
+          </div>
+          <div class="planet-control">
+            <label for="speed-saturn">Saturn</label>
+            <input type="range" id="speed-saturn" min="0" max="0.1" step="0.001" value="0.003">
+          </div>
+          <div class="planet-control">
+            <label for="speed-uranus">Uranus</label>
+            <input type="range" id="speed-uranus" min="0" max="0.1" step="0.001" value="0.002">
+          </div>
+          <div class="planet-control">
+            <label for="speed-neptune">Neptune</label>
+            <input type="range" id="speed-neptune" min="0" max="0.1" step="0.001" value="0.0015">
+          </div>
+        </div>
+      </div>
+      <div class="button-controls">
+        <button id="pause-btn">Pause</button>
+        <button id="theme-toggle">🌙 Dark</button>
+        <button id="orbit-toggle">🔄 Hide Orbits</button>
+      </div>
+    </div>
+  </div>
+  <div id="canvas-container"></div>
+  <script src="main.js"></script>
+</body>
+</html> 
